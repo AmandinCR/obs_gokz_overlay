@@ -10,5 +10,4 @@
 - can mess with variables at the top of the overlay.py file
 - overlay.py automatically unhids the clocktext when the game starts (after warmup)
 
-when you run VNL stream you must change the timer script in OBS to 10 minutes
-when you run KZT stream you must change the timer script in OBS to 5 minutes
+change the timer script in OBS to time variable in overlay.py
