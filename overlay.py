@@ -77,7 +77,7 @@ def update_player_text(filtered_times):
     with open("player.txt", "w") as file:
         count = 1
         for name,time in filtered_times:
-            spaces = " " * (max_name_length - len(name) + 2)
+            spaces = " " * (max_name_length - len(name) + 3)
             formatted_time = format_time(time)
             text = str(count) + "  " + name + spaces + formatted_time + "\n"
             file.write(text)
