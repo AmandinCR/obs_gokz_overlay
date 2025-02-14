@@ -9,11 +9,12 @@ from obswebsocket import obsws, requests
 
 
 # FTP Server Details
-FTP_HOST = "example.server.net"
-FTP_USER = "example_username"
-FTP_PASS = "example_password"
+FTP_HOST = "chainmail.dathost.net"
+FTP_USER = "64643c71e299637f22bdc37b"
+FTP_PASS = "MPnpdAHREu"
 FILE_PATH = "amandin.txt"
 LOCAL_FILE = "amandin.txt"
+WHITELIST_PATH = "addons/sourcemod/configs/whitelist/whitelist.txt"
 
 # OBS Details
 OBS_HOST = "localhost"
@@ -46,7 +47,7 @@ def analyze_file():
                 if words[0] == "0":
                     return True
             elif linecounter == 1:
-                map_text = words[0]
+                map_text = words[0] + "\n" + (" "*50)
             else:
                 player_times.append((words[0][:max_name_length],float(words[1])))
             linecounter += 1
@@ -61,13 +62,21 @@ def analyze_file():
     
     # send player times to files
     update_player_text(filtered_times)
+
+    # update map text
+    update_map_text(map_text)
     
     print("file updated!")
     return False
 
+def update_map_text(map_name):
+    with open("map_name.txt", "w") as file:
+        file.write(map_name)
+
 def update_mode_text(kz_mode):
     with open("mode.txt", "w") as file:
         file.write(kz_mode.upper())
+
 
 def update_group_text(group_id):
     with open("group.txt", "w") as file:
@@ -77,7 +86,7 @@ def update_player_text(filtered_times):
     with open("player.txt", "w") as file:
         count = 1
         for name,time in filtered_times:
-            spaces = " " * (max_name_length - len(name) + 3)
+            spaces = " " * (max_name_length - len(name) + 2)
             formatted_time = format_time(time)
             text = str(count) + "  " + name + spaces + formatted_time + "\n"
             file.write(text)
@@ -128,62 +137,63 @@ def get_file_hash():
 
 
 if __name__ == "__main__":
-    # get group number and kz mode
-    kz_mode = input("enter kz mode (kzt, vnl): ")
-    group_id = input("enter group letter (a, b, c, etc...): ")
-    
-    # remove old data
-    reset_files()
+    while True:
+        # get group number and kz mode
+        kz_mode = input("enter kz mode (kzt, vnl): ")
+        group_id = input("enter group letter (a, b, c, etc...): ")
+        
+        # remove old data
+        reset_files()
 
-    # connect to obs
-    ws = obsws(OBS_HOST, OBS_PORT, OBS_PASS)
-    ws.connect()
+        # connect to obs
+        ws = obsws(OBS_HOST, OBS_PORT, OBS_PASS)
+        ws.connect()
 
-    # hide obs countdown 
-    response = ws.call(requests.GetSceneItemId(sceneName="game", sourceName="clocktext"))
-    clock_id = response.datain["sceneItemId"]
-    ws.call(requests.SetSceneItemEnabled(sceneName="game", sceneItemId=clock_id, sceneItemEnabled=False))
-    started_clock = False
+        # hide obs countdown 
+        response = ws.call(requests.GetSceneItemId(sceneName="game", sourceName="clocktext"))
+        clock_id = response.datain["sceneItemId"]
+        ws.call(requests.SetSceneItemEnabled(sceneName="game", sceneItemId=clock_id, sceneItemEnabled=False))
+        started_clock = False
 
-    try:
-        # open an ftp connection
-        with ftplib.FTP(FTP_HOST) as ftp:
-            # use ftp credentials to log in
-            ftp.login(FTP_USER, FTP_PASS)
-            
-            # update group/mode text
-            update_group_text(group_id)
-            update_mode_text(kz_mode)
-            
-            # every 10 seconds, update the file and update obs text files
-            fetch_file(ftp)
-            warmup = analyze_file()
-            time.sleep(download_rate)
-            
-            last_hash = get_file_hash()
-            start_time = time.time()
-            max_time = 0
-            if kz_mode == "vnl": max_time = vnl_time
-            elif kz_mode == "kzt": max_time = kzt_time
-
-            while time.time() - start_time < max_time:
+        try:
+            # open an ftp connection
+            with ftplib.FTP(FTP_HOST) as ftp:
+                # use ftp credentials to log in
+                ftp.login(FTP_USER, FTP_PASS)
+                
+                # update group/mode text
+                update_group_text(group_id)
+                update_mode_text(kz_mode)
+                
+                # every 10 seconds, update the file and update obs text files
                 fetch_file(ftp)
-                current_hash = get_file_hash()
-                if current_hash and current_hash != last_hash:
-                    warmup = analyze_file()
-                    last_hash = current_hash
-                    if (not started_clock) and (not warmup):
-                        # show obs countdown
-                        ws.call(requests.SetSceneItemEnabled(sceneName="game", sceneItemId=clock_id, sceneItemEnabled=True))
-                        started_clock = True
-            
+                warmup = analyze_file()
                 time.sleep(download_rate)
+                
+                last_hash = get_file_hash()
+                start_time = time.time()
+                max_time = 0
+                if kz_mode == "vnl": max_time = vnl_time
+                elif kz_mode == "kzt": max_time = kzt_time
 
-    except Exception as e:
-        print(f"Connection Error: {e}")
-    
-    # close obs connection
-    ws.disconnect()
+                while time.time() - start_time < max_time:
+                    fetch_file(ftp)
+                    current_hash = get_file_hash()
+                    if current_hash and current_hash != last_hash:
+                        warmup = analyze_file()
+                        last_hash = current_hash
+                        if (not started_clock) and (not warmup):
+                            # show obs countdown
+                            ws.call(requests.SetSceneItemEnabled(sceneName="game", sceneItemId=clock_id, sceneItemEnabled=True))
+                            started_clock = True
+                
+                    time.sleep(download_rate)
+        except Exception as e:
+            print(f"Connection Error: {e}")
+        
+        # close obs connection
+        ws.disconnect()
+        print("reseting connections...")
 
 
 
