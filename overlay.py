@@ -4,28 +4,17 @@ import os
 import glob
 import re
 import hashlib
-from obswebsocket import obsws, requests
-
-
 
 # FTP Server Details
-#FTP_HOST = "chainmail.dathost.net"
-#FTP_USER = "64643c71e299637f22bdc37b"
-#FTP_PASS = "MPnpdAHREu"
+#FTP_HOST = "example.example.net"
+#FTP_USER = "example"
+#FTP_PASS = "example"
 FILE_PATH = "amandin.txt"
 LOCAL_FILE = "amandin.txt"
-WHITELIST_PATH = "addons/sourcemod/configs/whitelist/whitelist.txt"
-
-# OBS Details
-OBS_HOST = "localhost"
-OBS_PORT = 4455
-OBS_PASS = "amandinsucks"
 
 # global variables
 download_rate = 10 # in seconds
 max_name_length = 12 # max characters of name displayed
-vnl_time = 600 # in seconds
-kzt_time = 300 # in seconds
 
 
 
@@ -77,7 +66,6 @@ def update_mode_text(kz_mode):
     with open("mode.txt", "w") as file:
         file.write(kz_mode.upper())
 
-
 def update_group_text(group_id):
     with open("group.txt", "w") as file:
         file.write("GROUP " + group_id.upper())
@@ -117,16 +105,6 @@ def fetch_file(ftp):
     except Exception as e:
         print(f"Error: {e}")
 
-def send_whitelist(ftp, group_id, kz_mode):
-    try:
-        local_filename = "group" + group_id + "_" + kz_mode + "/whitelist.txt"
-        print(local_filename)
-        with open(local_filename, "rb") as f:
-            ftp.storbinary(f"STOR {WHITELIST_PATH}", f)
-        print(f"whitelist updated sucessfully.")
-    except Exception as e:
-        print(f"Error: {e}")
-
 def get_file_hash():
     try:
         with open(LOCAL_FILE, "rb") as f:
@@ -137,64 +115,39 @@ def get_file_hash():
 
 
 if __name__ == "__main__":
-    while True:
-        # get group number and kz mode
-        kz_mode = input("enter kz mode (kzt, vnl): ")
-        group_id = input("enter group letter (a, b, c, etc...): ")
-        
-        # remove old data
-        reset_files()
-
-        # connect to obs
-        ws = obsws(OBS_HOST, OBS_PORT, OBS_PASS)
-        ws.connect()
-
-        # hide obs countdown 
-        response = ws.call(requests.GetSceneItemId(sceneName="game", sourceName="clocktext"))
-        clock_id = response.datain["sceneItemId"]
-        ws.call(requests.SetSceneItemEnabled(sceneName="game", sceneItemId=clock_id, sceneItemEnabled=False))
-        started_clock = False
-
-        try:
-            # open an ftp connection
-            with ftplib.FTP(FTP_HOST) as ftp:
-                # use ftp credentials to log in
-                ftp.login(FTP_USER, FTP_PASS)
-                
-                # update group/mode text
-                update_group_text(group_id)
-                update_mode_text(kz_mode)
-                
-                # every 10 seconds, update the file and update obs text files
+    # get group number and kz mode
+    kz_mode = input("enter kz mode (kzt, vnl): ")
+    group_id = input("enter group letter (a, b, c, etc...): ")
+    
+    # remove old data
+    reset_files()
+    
+    try:
+        # open an ftp connection
+        with ftplib.FTP(FTP_HOST) as ftp:
+            # use ftp credentials to log in
+            ftp.login(FTP_USER, FTP_PASS)
+            
+            # update group/mode text
+            update_group_text(group_id)
+            update_mode_text(kz_mode)
+            
+            # every 10 seconds, update the file and update obs text files
+            fetch_file(ftp)
+            warmup = analyze_file()
+            time.sleep(download_rate)
+            
+            last_hash = get_file_hash()
+            while True:
                 fetch_file(ftp)
-                warmup = analyze_file()
+                current_hash = get_file_hash()
+                if current_hash and current_hash != last_hash:
+                    warmup = analyze_file()
+                    last_hash = current_hash
                 time.sleep(download_rate)
-                
-                last_hash = get_file_hash()
-                start_time = time.time()
-                max_time = 0
-                if kz_mode == "vnl": max_time = vnl_time
-                elif kz_mode == "kzt": max_time = kzt_time
-
-                while time.time() - start_time < max_time:
-                    fetch_file(ftp)
-                    current_hash = get_file_hash()
-                    if current_hash and current_hash != last_hash:
-                        warmup = analyze_file()
-                        last_hash = current_hash
-                        if (not started_clock) and (not warmup):
-                            # show obs countdown
-                            ws.call(requests.SetSceneItemEnabled(sceneName="game", sceneItemId=clock_id, sceneItemEnabled=True))
-                            started_clock = True
-                
-                    time.sleep(download_rate)
-        except Exception as e:
-            print(f"Connection Error: {e}")
-        
-        # close obs connection
-        ws.disconnect()
-        print("reseting connections...")
-
+    except Exception as e:
+        print(f"Connection Error: {e}")
+    
 
 
 
