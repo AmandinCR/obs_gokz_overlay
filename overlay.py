@@ -9,9 +9,9 @@ from obswebsocket import obsws, requests
 
 
 # FTP Server Details
-FTP_HOST = "chainmail.dathost.net"
-FTP_USER = "64643c71e299637f22bdc37b"
-FTP_PASS = "MPnpdAHREu"
+#FTP_HOST = "chainmail.dathost.net"
+#FTP_USER = "64643c71e299637f22bdc37b"
+#FTP_PASS = "MPnpdAHREu"
 FILE_PATH = "amandin.txt"
 LOCAL_FILE = "amandin.txt"
 WHITELIST_PATH = "addons/sourcemod/configs/whitelist/whitelist.txt"
