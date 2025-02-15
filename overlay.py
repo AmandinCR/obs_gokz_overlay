@@ -6,16 +6,20 @@ import re
 import hashlib
 
 # FTP Server Details
-#FTP_HOST = "example.example.net"
-#FTP_USER = "example"
-#FTP_PASS = "example"
+FTP_HOST_NA = "example.example.net"
+FTP_USER_NA = "example"
+FTP_PASS_NA = "example"
+
+FTP_HOST = "example.example.net"
+FTP_USER = "example"
+FTP_PASS = "example"
+
 FILE_PATH = "amandin.txt"
 LOCAL_FILE = "amandin.txt"
 
 # global variables
 download_rate = 10 # in seconds
 max_name_length = 12 # max characters of name displayed
-
 
 
 def format_time(seconds):
@@ -112,39 +116,52 @@ def get_file_hash():
     except FileNotFoundError:
         return None
 
+def update_data(ftp):
+    fetch_file(ftp)
+    warmup = analyze_file()
+    time.sleep(download_rate)
+    
+    last_hash = get_file_hash()
+    while True:
+        fetch_file(ftp)
+        current_hash = get_file_hash()
+        if current_hash and current_hash != last_hash:
+            warmup = analyze_file()
+            last_hash = current_hash
+        time.sleep(download_rate)
+
 
 
 if __name__ == "__main__":
     # get group number and kz mode
     kz_mode = input("enter kz mode (kzt, vnl): ")
     group_id = input("enter group letter (a, b, c, etc...): ")
+    server = input("enter server (na, eu): ")
     
     # remove old data
     reset_files()
     
+    # update group/mode text
+    update_group_text(group_id)
+    update_mode_text(kz_mode)
+
     try:
         # open an ftp connection
-        with ftplib.FTP(FTP_HOST) as ftp:
-            # use ftp credentials to log in
-            ftp.login(FTP_USER, FTP_PASS)
-            
-            # update group/mode text
-            update_group_text(group_id)
-            update_mode_text(kz_mode)
-            
-            # every 10 seconds, update the file and update obs text files
-            fetch_file(ftp)
-            warmup = analyze_file()
-            time.sleep(download_rate)
-            
-            last_hash = get_file_hash()
-            while True:
-                fetch_file(ftp)
-                current_hash = get_file_hash()
-                if current_hash and current_hash != last_hash:
-                    warmup = analyze_file()
-                    last_hash = current_hash
-                time.sleep(download_rate)
+        if server == "na":
+            with ftplib.FTP(FTP_HOST_NA) as ftp:
+                # use ftp credentials to log in
+                ftp.login(FTP_USER_NA, FTP_PASS_NA)
+                
+                # every few seconds, update the file and update obs text files
+                update_data(ftp)
+
+        elif server == "eu":
+            with ftplib.FTP(FTP_HOST) as ftp:
+                # use ftp credentials to log in
+                ftp.login(FTP_USER, FTP_PASS)
+                
+                # every few seconds, update the file and update obs text files
+                update_data(ftp)
     except Exception as e:
         print(f"Connection Error: {e}")
     
