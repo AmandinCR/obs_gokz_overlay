@@ -35,13 +35,9 @@ def analyze_file():
         linecounter = 0
         for line in f:
             words = line.split()
-            if linecounter == 0:
-                # check if we should start the timer
-                if words[0] == "0":
-                    return True
-            elif linecounter == 1:
+            if linecounter == 1:
                 map_text = words[0] + "\n" + (" "*50)
-            else:
+            elif linecounter > 1:
                 player_times.append((words[0][:max_name_length],float(words[1])))
             linecounter += 1
     
@@ -60,7 +56,6 @@ def analyze_file():
     update_map_text(map_text)
     
     print("file updated!")
-    return False
 
 def update_map_text(map_name):
     with open("map_name.txt", "w") as file:
@@ -118,15 +113,16 @@ def get_file_hash():
 
 def update_data(ftp):
     fetch_file(ftp)
-    warmup = analyze_file()
+    analyze_file()
     time.sleep(download_rate)
     
     last_hash = get_file_hash()
+    
     while True:
         fetch_file(ftp)
         current_hash = get_file_hash()
         if current_hash and current_hash != last_hash:
-            warmup = analyze_file()
+            analyze_file()
             last_hash = current_hash
         time.sleep(download_rate)
 
