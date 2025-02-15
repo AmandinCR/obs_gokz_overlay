@@ -10,9 +10,9 @@ FTP_HOST_NA = "example.example.net"
 FTP_USER_NA = "example"
 FTP_PASS_NA = "example"
 
-FTP_HOST = "example.example.net"
-FTP_USER = "example"
-FTP_PASS = "example"
+FTP_HOST_EU = "example.example.net"
+FTP_USER_EU = "example"
+FTP_PASS_EU = "example"
 
 FILE_PATH = "amandin.txt"
 LOCAL_FILE = "amandin.txt"
@@ -33,12 +33,15 @@ def analyze_file():
     started = ""
     with open(LOCAL_FILE, "r") as f:
         linecounter = 0
+        tmp_name = ""
         for line in f:
             words = line.split()
-            if linecounter == 1:
+            if linecounter == 0:
                 map_text = words[0] + "\n" + (" "*50)
-            elif linecounter > 1:
-                player_times.append((words[0][:max_name_length],float(words[1])))
+            elif linecounter % 2 == 1:
+                tmp_name = words[0][:max_name_length]
+            elif linecounter % 2 == 0:
+                player_times.append((tmp_name,float(words[0])))
             linecounter += 1
     
     # sort the player times and remove slower times
@@ -152,9 +155,9 @@ if __name__ == "__main__":
                 update_data(ftp)
 
         elif server == "eu":
-            with ftplib.FTP(FTP_HOST) as ftp:
+            with ftplib.FTP(FTP_HOST_EU) as ftp:
                 # use ftp credentials to log in
-                ftp.login(FTP_USER, FTP_PASS)
+                ftp.login(FTP_USER_EU, FTP_PASS_EU)
                 
                 # every few seconds, update the file and update obs text files
                 update_data(ftp)
