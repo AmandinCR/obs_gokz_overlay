@@ -37,10 +37,12 @@ def analyze_file():
         for line in f:
             words = line.split()
             if linecounter == 0:
+                print("idk")
+            elif linecounter == 1:
                 map_text = words[0] + "\n" + (" "*50)
-            elif linecounter % 2 == 1:
-                tmp_name = words[0][:max_name_length]
             elif linecounter % 2 == 0:
+                tmp_name = words[0][:max_name_length]
+            elif linecounter % 2 == 1:
                 player_times.append((tmp_name,float(words[0])))
             linecounter += 1
     
